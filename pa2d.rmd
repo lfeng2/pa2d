@@ -1,0 +1,93 @@
+---
+title: Peer Assessment 2 - Population Health and Economic Consequences of Severe Weather
+  Events in the US
+output: pdf_document
+---
+
+## synopsis 
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities.
+Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent 
+possible is a key concern.
+
+This project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This 
+database tracks characteristics of major storms and weather events in the United States, including when and where they 
+occur, as well as estimates of any fatalities, injuries, and property damage.
+
+The objectives of this analysis is to answer the question of 1. Across the United States, which types of events (as 
+indicated in the EVTYPE variable) are most harmful with respect to population health? 2. Across the United States, which 
+types of events have the greatest economic consequences?
+
+```{r setup, include = FALSE}
+require(plyr)
+require(ggplot2)
+```
+
+## Data Processing
+### Loading data
+The data got downloaded from [source](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) and stored as `stormData.csv` file at the disk in the current working directory.
+
+```{r cache=TRUE}
+if (!file.exists("repdata_data_StormData.csv")) {
+    # Download the file if it is not represented in the working directory
+    if (!file.exits("repdata_data_StormData.csv.bz2")) {
+        download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", 
+            "repdata_data_StormData.csv.bz2", mode = "wb")
+    }
+
+    # unzip
+    bunzip2("repdata_data_StormData.csv.bz2", exdir = ".")
+}
+
+storm <- read.csv("repdata_data_StormData.csv")
+```
+####The dataframe has 902,297 observation and 37 variables.
+```{r}
+dim(storm)
+names(storm)
+```
+### Preprocessing
+
+To find the event types that are most harmful to population health and have the most economic consequences, the number
+of casualties and property damages are aggregated by the event type, separately.
+```{r}
+library(plyr)
+casualties <- ddply(storm, .(EVTYPE), summarize,
+fatalities = sum(FATALITIES))
+# Find events that caused most death and injury
+fatal_events <- head(casualties[order(casualties$fatalities, decreasing = T), ], 10)
+fatal_events[, c("EVTYPE", "fatalities")]
+```
+Top 10 events that are most harmful to population health (I use deaths as the indicator)
+```{r}
+fatal_events[, c("EVTYPE", "fatalities")]
+```
+
+```{r}
+propdmg <- ddply(storm, .(EVTYPE), summarize,
+propdmg = sum(PROPDMG))
+# Find events that caused most death and injury
+propdmg_events <- head(propdmg[order(propdmg$propdmg, decreasing = T), ], 10)
+```
+Top 10 events that have the most Economic Consequences (I use property damages as the indicator)
+```{r}
+propdmg_events[, c("EVTYPE", "propdmg")]
+```
+
+
+### Results
+```{r}
+
+names <-fatal_events$EVTYPE
+barplot(fatal_events$fatalities,main="Fatality of Different Severe Weather Events", horiz=FALSE,names.arg=names, las=2)
+```
+
+
+
+```{r}
+
+names <-propdmg_events$EVTYPE
+barplot(propdmg_events$propdmg,main="Property Damages of Different Severe Weather Events", horiz=FALSE,names.arg=names, las=2)
+```
+
+## Conclusions
+Based on the data analysis tornadoes were the most harmful severe weather events, in terms of casualties and economic consequences in the last 60 years. Excessive heat and flash flood are important cusses for casualties. Heat is not an importance factor for property damages.  Overall, tornados are the most harmful event for both human health and economic damages.  Too much water (flash flood, flood) and high wind (thunderstorm wind and wind) have the most economic consequences.  Lightning is also an important severe event for both human health and property damages.
